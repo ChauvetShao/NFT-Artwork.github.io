@@ -176,38 +176,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 步骤滑块相关变量和函数
-    const stepsSliderState = {
+    const stepsSlider = {
         track: document.querySelector('.steps-track'),
         items: document.querySelectorAll('.step-item'),
-        currentIndex: 0
+        currentIndex: 0,
+        isAnimating: false
     };
 
     function updateStepsSlider() {
+        if (!stepsSlider.track || !stepsSlider.items.length) return;
+
         // Remove active class from all items
-        stepsSliderState.items.forEach(item => item.classList.remove('active'));
+        stepsSlider.items.forEach(item => item.classList.remove('active'));
         
         // Add active class to current item
-        stepsSliderState.items[stepsSliderState.currentIndex].classList.add('active');
+        stepsSlider.items[stepsSlider.currentIndex].classList.add('active');
         
         // Calculate translation
-        const translation = stepsSliderState.currentIndex * -20;
-        stepsSliderState.track.style.transform = `translateX(${translation}%)`;
+        const itemWidth = stepsSlider.items[0].offsetWidth;
+        const translation = -(stepsSlider.currentIndex * itemWidth);
+        stepsSlider.track.style.transform = `translateX(${translation}px)`;
     }
 
-    // Set initial active state
-    updateStepsSlider();
+    // Add click handlers for step items
+    if (stepsSlider.track && stepsSlider.items.length) {
+        stepsSlider.items.forEach((item, index) => {
+            item.addEventListener('click', () => {
+                if (stepsSlider.isAnimating || index === stepsSlider.currentIndex) return;
+                
+                stepsSlider.isAnimating = true;
+                stepsSlider.currentIndex = index;
+                updateStepsSlider();
+                
+                setTimeout(() => {
+                    stepsSlider.isAnimating = false;
+                }, 500); // Match transition duration
+            });
+        });
 
-    // Add click handlers for navigation
-    stepsSliderState.track.addEventListener('click', (e) => {
-        const item = e.target.closest('.step-item');
-        if (!item) return;
+        // Set initial active state
+        updateStepsSlider();
 
-        const index = Array.from(stepsSliderState.items).indexOf(item);
-        if (index === stepsSliderState.currentIndex) return; // Already centered
-
-        if (index >= 0 && index < stepsSliderState.items.length) {
-            stepsSliderState.currentIndex = index;
-            updateStepsSlider();
-        }
-    });
+        // Update on window resize
+        window.addEventListener('resize', updateStepsSlider);
+    }
 });

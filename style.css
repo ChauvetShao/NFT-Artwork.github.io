@@ -48,6 +48,7 @@ p{
 }
 
 section {
+    cursor: pointer;
     position: relative;
     top: 0;
     left: 0;
@@ -975,4 +976,32 @@ p {
     font-style: italic;
     font-weight: bold;
     /* margin-bottom: 1x; */
+}
+
+.video-container {
+    width: 80%;
+    max-width: 1280px;
+    margin: 2rem auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.video-caption {
+    text-align: center;
+    margin: 1rem auto;
+    font-size: 16px;
+    color: #666;
+    font-style: italic;
+}
+
+/* 移除之前可能影响到视频容器的样式 */
+.video-container.img-with-description {
+    width: 80% !important;
 }
