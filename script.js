@@ -57,12 +57,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // 图片滚动功能
     const initImageScroll = () => {
         const imageContainer = document.getElementById('imageContainer');
-        const images = document.querySelectorAll('.scroll-image');
-        
-        if (imageContainer && images.length) {
-            console.log('Total images:', images.length);
-            // 图片滚动相关代码...
+        const images = Array.from(document.querySelectorAll('.scroll-image'));
+        let currentImageIndex = 0;
+        let isTransitioning = false;
+        const topThreshold = 300;
+        let hasReachedEnd = false;
+
+        function switchImage(direction) {
+            if (isTransitioning) return;
+            
+            isTransitioning = true;
+            images[currentImageIndex].classList.remove('active');
+            
+            if (direction === 'next' && currentImageIndex < images.length - 1) {
+                currentImageIndex++;
+            } else if (direction === 'prev' && currentImageIndex > 0) {
+                currentImageIndex--;
+            }
+
+            images[currentImageIndex].classList.add('active');
+            
+            // 检查是否到达最后一张
+            hasReachedEnd = currentImageIndex === images.length - 1;
+
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 500);
         }
+
+        function handleWheel(e) {
+            const containerRect = imageContainer.getBoundingClientRect();
+            
+            // 如果已经滚动过最后一张图片，允许正常滚动
+            if (hasReachedEnd && e.deltaY > 0) {
+                return;
+            }
+
+            // 如果在阈值范围内
+            if (containerRect.top <= topThreshold) {
+                if (e.deltaY > 0 && currentImageIndex < images.length - 1) {
+                    e.preventDefault();
+                    switchImage('next');
+                } else if (e.deltaY < 0 && currentImageIndex > 0) {
+                    e.preventDefault();
+                    switchImage('prev');
+                }
+            }
+        }
+
+        // 初始化第一张图片
+        images[0].classList.add('active');
+
+        // 添加事件监听
+        window.addEventListener('wheel', handleWheel, { passive: false });
     };
 
     // 动画效果
@@ -108,55 +155,59 @@ document.addEventListener('DOMContentLoaded', function() {
     initAnimations();
     initHeartButtons();
 
-    const imageContainer = document.getElementById('imageContainer');
-    const images = document.querySelectorAll('.scroll-image');
-    let currentIndex = 0;
-    let isInViewport = false;
-    let totalScrolled = 0;
-    const scrollThreshold = 100; // Amount of scroll needed to switch images
+    // 图片滚动相关变量和功能
+    const scrollState = {
+        currentIndex: 0,
+        isTransitioning: false,
+        hasCompletedCarousel: false,
+        scrollThreshold: 50,
+        accumulatedDelta: 0,
+        transitionDuration: 500,
+        isAtBottom: false // 新增：标记是否到达底部
+    };
 
-    // Check if element is in viewport
-    function isElementInViewport(el) {
-        const rect = el.getBoundingClientRect();
-        return (
-            rect.top <= (window.innerHeight || document.documentElement.clientHeight) &&
-            rect.bottom >= 0
-        );
+    function checkPosition(container) {
+        const rect = container.getBoundingClientRect();
+        const containerBottom = rect.bottom;
+        const viewportBottom = window.innerHeight;
+        
+        // 检查容器底部是否接近视口底部（允许5px误差）
+        return Math.abs(containerBottom - viewportBottom) < 5;
     }
 
-    window.addEventListener('scroll', function() {
-        isInViewport = isElementInViewport(imageContainer);
-    });
+    // 步骤滑块相关变量和函数
+    const stepsSliderState = {
+        track: document.querySelector('.steps-track'),
+        items: document.querySelectorAll('.step-item'),
+        currentIndex: 0
+    };
 
-    window.addEventListener('wheel', function(e) {
-        if (!isInViewport) return;
+    function updateStepsSlider() {
+        // Remove active class from all items
+        stepsSliderState.items.forEach(item => item.classList.remove('active'));
+        
+        // Add active class to current item
+        stepsSliderState.items[stepsSliderState.currentIndex].classList.add('active');
+        
+        // Calculate translation
+        const translation = stepsSliderState.currentIndex * -20;
+        stepsSliderState.track.style.transform = `translateX(${translation}%)`;
+    }
 
-        e.preventDefault();
-        totalScrolled += e.deltaY;
+    // Set initial active state
+    updateStepsSlider();
 
-        if (Math.abs(totalScrolled) >= scrollThreshold) {
-            if (totalScrolled > 0) {
-                // Scrolling down
-                if (currentIndex < images.length - 1) {
-                    images[currentIndex].classList.remove('active');
-                    currentIndex++;
-                    images[currentIndex].classList.add('active');
-                } else {
-                    // At last image, allow normal scroll
-                    window.scrollBy(0, e.deltaY);
-                }
-            } else {
-                // Scrolling up
-                if (currentIndex > 0) {
-                    images[currentIndex].classList.remove('active');
-                    currentIndex--;
-                    images[currentIndex].classList.add('active');
-                } else {
-                    // At first image, allow normal scroll
-                    window.scrollBy(0, e.deltaY);
-                }
-            }
-            totalScrolled = 0;
+    // Add click handlers for navigation
+    stepsSliderState.track.addEventListener('click', (e) => {
+        const item = e.target.closest('.step-item');
+        if (!item) return;
+
+        const index = Array.from(stepsSliderState.items).indexOf(item);
+        if (index === stepsSliderState.currentIndex) return; // Already centered
+
+        if (index >= 0 && index < stepsSliderState.items.length) {
+            stepsSliderState.currentIndex = index;
+            updateStepsSlider();
         }
-    }, { passive: false });
+    });
 });
